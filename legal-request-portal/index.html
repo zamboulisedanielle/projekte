@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Legal Request Portal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout: App-Leiste oben, Tabs; Ansicht "Anfragen" = Formular links, Liste rechts (wie eine SharePoint-Liste mit Formular-Panel). */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --ink:#17212b; --muted:#5b6876; --line:#dbe1e7;
+  --accent:#0f5e6e; --accent-soft:#e2f0f2;
+  --ok:#1f7a4d; --ok-bg:#e3f4ea; --warn:#9a5b00; --warn-bg:#fdf1dc; --crit:#b3261e; --crit-bg:#fbe5e3; --info:#2a5db0; --info-bg:#e5edfa;
+  --display:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11171c; --surface:#192229; --ink:#e6ecf1; --muted:#9aa8b4; --line:#2b3741;
+    --accent:#5cc0cf; --accent-soft:#16343a;
+    --ok:#6fd39c; --ok-bg:#163326; --warn:#f0b75c; --warn-bg:#3a2a10; --crit:#f08a82; --crit-bg:#3d1c1a; --info:#8db3f2; --info-bg:#1b2a44;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11171c; --surface:#192229; --ink:#e6ecf1; --muted:#9aa8b4; --line:#2b3741;
+  --accent:#5cc0cf; --accent-soft:#16343a;
+  --ok:#6fd39c; --ok-bg:#163326; --warn:#f0b75c; --warn-bg:#3a2a10; --crit:#f08a82; --crit-bg:#3d1c1a; --info:#8db3f2; --info-bg:#1b2a44;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body)}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0}
+a{color:var(--accent)}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+.bar{background:var(--surface);border-bottom:1px solid var(--line);padding:14px 20px;display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-content:space-between}
+.brand{display:flex;gap:12px;align-items:center}
+.logo{width:34px;height:34px;border-radius:8px;background:var(--accent);display:grid;place-items:center;color:var(--surface);font-weight:700;font-size:14px}
+.brand h1{font-size:18px}
+.brand p{margin:0;color:var(--muted);font-size:13px}
+nav{display:flex;gap:4px;flex-wrap:wrap}
+nav a{padding:7px 12px;border-radius:6px;text-decoration:none;color:var(--muted);font-weight:500}
+nav a[aria-current="page"]{background:var(--accent-soft);color:var(--accent)}
+nav a:hover{color:var(--ink)}
+
+main{max-width:1280px;margin:0 auto;padding:20px 16px 48px;display:grid;gap:20px}
+.view{display:none;gap:20px}
+.view.active{display:grid}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.kpi b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.kpi span{color:var(--muted);font-size:13px}
+.kpi.alert b{color:var(--crit)}
+
+.split{display:grid;grid-template-columns:minmax(300px,380px) 1fr;gap:20px;align-items:start}
+@media (max-width:900px){.split{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+.card h2{font-size:16px;margin-bottom:12px}
+.card h3{font-size:14px;margin:16px 0 6px}
+
+form{display:grid;gap:12px}
+label{display:grid;gap:4px;font-size:13px;font-weight:500}
+input,select,textarea{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:8px 10px;width:100%}
+textarea{min-height:110px;resize:vertical}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hint{font-size:12px;color:var(--muted);font-weight:400}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--surface);border-radius:6px;padding:8px 14px;font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.btn.small{padding:4px 10px;font-size:13px}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+.ai{border:1px dashed var(--accent);background:var(--accent-soft);border-radius:8px;padding:10px 12px;font-size:13px;display:grid;gap:6px}
+.ai strong{color:var(--accent)}
+.meter{height:6px;background:var(--line);border-radius:3px;overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent)}
+.pii{border-left:3px solid var(--warn);background:var(--warn-bg);color:var(--ink);padding:8px 10px;border-radius:0 6px 6px 0;font-size:13px;display:grid;gap:6px}
+.pii[hidden]{display:none}
+.tags{display:flex;gap:4px;flex-wrap:wrap}
+.tag{font-family:var(--mono);font-size:11px;padding:1px 6px;border-radius:4px;background:var(--surface);border:1px solid var(--line)}
+
+.toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}
+.toolbar input{max-width:240px}
+.toolbar select{max-width:190px}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th{text-align:left;font-size:12px;color:var(--muted);font-weight:600;padding:8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:9px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr{cursor:pointer}
+tbody tr:hover{background:var(--accent-soft)}
+td.id{font-family:var(--mono);font-size:12px;white-space:nowrap}
+td.num{font-variant-numeric:tabular-nums;white-space:nowrap}
+.pill{display:inline-block;font-size:12px;font-weight:600;padding:2px 8px;border-radius:999px;white-space:nowrap}
+.s-Eingegangen{background:var(--info-bg);color:var(--info)}
+.s-In-Prüfung{background:var(--warn-bg);color:var(--warn)}
+.s-Rückfrage{background:var(--crit-bg);color:var(--crit)}
+.s-Erledigt{background:var(--ok-bg);color:var(--ok)}
+.prio{font-size:12px;font-weight:600}
+.p-hoch{color:var(--crit)} .p-mittel{color:var(--warn)} .p-niedrig{color:var(--muted)}
+.late{color:var(--crit);font-weight:600}
+.lock{font-size:11px;color:var(--warn);font-weight:600}
+
+dialog{border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--ink);padding:0;width:min(640px,calc(100% - 32px))}
+dialog::backdrop{background:rgba(10,20,30,.45)}
+.dlg{padding:20px;display:grid;gap:12px}
+.dlg header{display:flex;justify-content:space-between;gap:12px;align-items:start}
+.meta{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:14px}
+.meta dt{color:var(--muted)}
+.meta dd{margin:0}
+.log{font-size:13px;border-left:2px solid var(--line);padding-left:12px;display:grid;gap:6px;max-height:180px;overflow:auto}
+.log time{font-family:var(--mono);font-size:11px;color:var(--muted);margin-right:6px}
+.actions{display:flex;gap:8px;flex-wrap:wrap}
+
+.bars{display:grid;gap:8px}
+.barrow{display:grid;grid-template-columns:170px 1fr 34px;gap:10px;align-items:center;font-size:13px}
+.barrow .track{height:14px;background:var(--bg);border-radius:4px;overflow:hidden}
+.barrow .fill{height:100%;background:var(--accent);border-radius:4px}
+.barrow b{font-variant-numeric:tabular-nums;text-align:right}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:20px}
+
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px;counter-reset:step}
+.step{border:1px solid var(--line);border-top:3px solid var(--accent);border-radius:8px;padding:10px 12px;background:var(--bg);font-size:13px}
+.step::before{counter-increment:step;content:"Schritt " counter(step);display:block;font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.step b{display:block;font-size:14px;margin:2px 0 4px}
+pre{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:12px;overflow-x:auto;font:12.5px/1.55 var(--mono);margin:0}
+.prose{max-width:72ch}
+.prose p,.prose li{margin:0 0 6px}
+.prose ul{padding-left:18px;margin:0}
+.note{font-size:13px;color:var(--muted)}
+footer{color:var(--muted);font-size:13px;text-align:center}
+@media (prefers-reduced-motion:no-preference){.meter i,.fill{transition:width .3s}}
+@media (max-width:480px){.row2{grid-template-columns:1fr}.barrow{grid-template-columns:110px 1fr 28px}}
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="brand">
+    <div class="logo" aria-hidden="true">§</div>
+    <div>
+      <h1>Legal Request Portal</h1>
+      <p>Anfragen an die Rechtsabteilung digital einreichen, zuordnen und nachverfolgen</p>
+    </div>
+  </div>
+  <nav aria-label="Ansichten">
+    <a href="#anfragen" data-view="anfragen">Anfragen</a>
+    <a href="#auswertung" data-view="auswertung">Auswertung</a>
+    <a href="#umsetzung" data-view="umsetzung">Umsetzung in Microsoft 365</a>
+  </nav>
+</div>
+
+<main>
+  <section class="kpis" aria-label="Kennzahlen">
+    <div class="kpi"><b id="k-open">0</b><span>offene Anfragen</span></div>
+    <div class="kpi"><b id="k-new">0</b><span>neu eingegangen</span></div>
+    <div class="kpi alert"><b id="k-late">0</b><span>Frist überschritten</span></div>
+    <div class="kpi"><b id="k-pii">0</b><span>mit personenbezogenen Daten</span></div>
+    <div class="kpi"><b id="k-ai">0 %</b><span>KI-Vorschlag übernommen</span></div>
+  </section>
+
+  <!-- Ansicht: Anfragen -->
+  <section class="view" id="v-anfragen">
+    <div class="split">
+      <div class="card">
+        <h2>Neue Anfrage stellen</h2>
+        <form id="f" novalidate>
+          <label for="f-titel">Betreff
+            <input id="f-titel" required maxlength="90" placeholder="z. B. Prüfung Rahmenvertrag Lieferant">
+          </label>
+          <div class="row2">
+            <label for="f-abt">Abteilung
+              <select id="f-abt">
+                <option>Einkauf</option><option>Vertrieb</option><option>Personal</option><option>IT</option><option>Produktion</option><option>Forschung &amp; Entwicklung</option><option>Marketing</option>
+              </select>
+            </label>
+            <label for="f-land">Gesellschaft
+              <select id="f-land">
+                <option>Deutschland</option><option>Italien</option><option>Frankreich</option><option>Spanien</option><option>Polen</option><option>Vereinigtes Königreich</option>
+              </select>
+            </label>
+          </div>
+          <label for="f-text">Beschreibung
+            <textarea id="f-text" required placeholder="Was soll die Rechtsabteilung prüfen? Bitte keine unnötigen personenbezogenen Daten eintragen."></textarea>
+          </label>
+          <div class="pii" id="pii" hidden role="status">
+            <span><b>Datenschutz-Hinweis:</b> Im Text wurden personenbezogene Daten erkannt. Sind sie für die Prüfung nötig?</span>
+            <div class="tags" id="pii-tags"></div>
+            <div><button type="button" class="btn small ghost" id="pseudo">Daten durch Platzhalter ersetzen</button></div>
+          </div>
+          <div class="ai" aria-live="polite">
+            <span><strong>KI-Vorschlag Kategorie:</strong> <span id="ai-cat">Bitte Beschreibung eingeben</span></span>
+            <div class="meter" aria-hidden="true"><i id="ai-meter" style="width:0"></i></div>
+            <span class="hint" id="ai-why">Die Zuordnung wird aus Schlüsselbegriffen im Text abgeleitet und ist nachvollziehbar.</span>
+          </div>
+          <div class="row2">
+            <label for="f-kat">Kategorie
+              <select id="f-kat"></select>
+            </label>
+            <label for="f-prio">Priorität
+              <select id="f-prio"><option value="niedrig">niedrig (10 AT)</option><option value="mittel" selected>mittel (5 AT)</option><option value="hoch">hoch (2 AT)</option></select>
+            </label>
+          </div>
+          <span class="hint" id="route">Zuständig: wird automatisch ermittelt</span>
+          <div class="actions">
+            <button class="btn" type="submit">Anfrage einreichen</button>
+            <button class="btn ghost" type="button" id="demo">Beispieltext einfügen</button>
+          </div>
+          <span class="hint" id="f-msg" role="status"></span>
+        </form>
+      </div>
+
+      <div class="card">
+        <h2>Alle Anfragen</h2>
+        <div class="toolbar">
+          <input id="q" type="search" placeholder="Suchen (ID, Betreff, Abteilung)" aria-label="Anfragen durchsuchen">
+          <select id="fs" aria-label="Nach Status filtern"><option value="">Alle Status</option><option>Eingegangen</option><option>In Prüfung</option><option>Rückfrage</option><option>Erledigt</option></select>
+          <select id="fk" aria-label="Nach Kategorie filtern"><option value="">Alle Kategorien</option></select>
+        </div>
+        <div class="tablewrap">
+          <table>
+            <thead><tr><th>ID</th><th>Betreff</th><th>Kategorie</th><th>Status</th><th>Priorität</th><th>Frist</th><th>Zuständig</th></tr></thead>
+            <tbody id="tb"></tbody>
+          </table>
+        </div>
+        <p class="note" id="count"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Ansicht: Auswertung -->
+  <section class="view" id="v-auswertung">
+    <div class="grid2">
+      <div class="card"><h2>Anfragen nach Kategorie</h2><div class="bars" id="b-kat"></div></div>
+      <div class="card"><h2>Anfragen nach Status</h2><div class="bars" id="b-status"></div></div>
+      <div class="card"><h2>Anfragen nach Gesellschaft</h2><div class="bars" id="b-land"></div></div>
+      <div class="card"><h2>Auslastung der Teams (offen)</h2><div class="bars" id="b-team"></div></div>
+    </div>
+    <p class="note">In Microsoft 365 würde diese Auswertung als Power-BI-Bericht direkt auf der SharePoint-Liste laufen.</p>
+  </section>
+
+  <!-- Ansicht: Umsetzung -->
+  <section class="view" id="v-umsetzung">
+    <div class="card prose" style="max-width:none">
+      <h2>Worum es geht</h2>
+      <p class="prose">Anfragen an eine Rechtsabteilung kommen oft per E-Mail, Telefon oder Zuruf. Dadurch fehlen Informationen, Fristen gehen unter und niemand sieht, wie ausgelastet die Teams sind. Dieser Prototyp zeigt einen einheitlichen Eingang: ein Formular, eine zentrale Liste, feste Zuständigkeiten, Fristen und eine Auswertung. Er ist als klickbare Webseite gebaut, damit man den Ablauf ausprobieren kann. Die Seite unten zeigt, wie ich ihn mit der Microsoft Power Platform umsetzen würde.</p>
+    </div>
+    <div class="card">
+      <h2>Prozess vom Eingang bis zur Erledigung</h2>
+      <div class="flow">
+        <div class="step"><b>Power Apps</b>Formular für Mitarbeitende, eingebettet als Seite in SharePoint und in Teams.</div>
+        <div class="step"><b>SharePoint-Liste</b>„Rechtsanfragen“ speichert jede Anfrage mit Versionsverlauf.</div>
+        <div class="step"><b>AI Builder</b>Kategorienvorschlag aus dem Beschreibungstext. Ein Mensch bestätigt ihn.</div>
+        <div class="step"><b>Power Automate</b>Weiterleitung an das zuständige Team, Benachrichtigung in Teams, Frist berechnen.</div>
+        <div class="step"><b>Erinnerungen</b>Täglicher Flow prüft Fristen und meldet Überschreitungen.</div>
+        <div class="step"><b>Power BI</b>Auswertung nach Kategorie, Gesellschaft, Status und Bearbeitungszeit.</div>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h2>Datenmodell der SharePoint-Liste</h2>
+        <div class="tablewrap"><table>
+          <thead><tr><th>Spalte</th><th>Typ</th><th>Hinweis</th></tr></thead>
+          <tbody style="cursor:default">
+            <tr><td>Title (Betreff)</td><td>Text</td><td>Pflichtfeld</td></tr>
+            <tr><td>Beschreibung</td><td>Mehrere Textzeilen</td><td>Hinweis auf Datensparsamkeit</td></tr>
+            <tr><td>Kategorie</td><td>Auswahl</td><td>8 Werte, KI-Vorschlag</td></tr>
+            <tr><td>KI_Konfidenz</td><td>Zahl</td><td>zur Qualitätskontrolle</td></tr>
+            <tr><td>Status</td><td>Auswahl</td><td>Eingegangen → In Prüfung → Rückfrage → Erledigt</td></tr>
+            <tr><td>Priorität</td><td>Auswahl</td><td>steuert die Frist</td></tr>
+            <tr><td>Frist</td><td>Datum</td><td>vom Flow gesetzt</td></tr>
+            <tr><td>Zuständig</td><td>Person/Gruppe</td><td>Routing-Tabelle</td></tr>
+            <tr><td>Gesellschaft</td><td>Auswahl</td><td>europäische Standorte</td></tr>
+            <tr><td>Enthält_PbD</td><td>Ja/Nein</td><td>Personenbezogene Daten</td></tr>
+          </tbody>
+        </table></div>
+      </div>
+      <div class="card">
+        <h2>Datenschutz und Sicherheit</h2>
+        <ul class="prose">
+          <li><b>Datensparsamkeit (Art. 5 DSGVO):</b> Das Formular erkennt E-Mail-Adressen, Telefonnummern, IBAN und Geburtsdaten und schlägt Platzhalter vor.</li>
+          <li><b>Zugriff nach Rollen:</b> Mitarbeitende sehen nur eigene Anfragen (Elementberechtigungen), die Rechtsabteilung sieht alle.</li>
+          <li><b>Nachvollziehbarkeit:</b> Jede Statusänderung wird protokolliert (Versionsverlauf und Verlaufsfeld).</li>
+          <li><b>Löschkonzept:</b> Erledigte Anfragen werden nach einer festgelegten Frist per Aufbewahrungsrichtlinie gelöscht.</li>
+          <li><b>KI mit Mensch:</b> Die KI schlägt nur vor, die Entscheidung trifft eine Person. Die Konfidenz wird gespeichert.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="card">
+        <h2>Power Fx: Anfrage speichern</h2>
+<pre>Patch(
+  Rechtsanfragen,
+  Defaults(Rechtsanfragen),
+  {
+    Title: txtBetreff.Text,
+    Beschreibung: txtBeschreibung.Text,
+    Kategorie: { Value: drpKategorie.Selected.Value },
+    KI_Konfidenz: varKonfidenz,
+    Status: { Value: "Eingegangen" },
+    'Priorität': { Value: drpPrio.Selected.Value },
+    Enthält_PbD: varPbDErkannt
+  }
+);
+Notify("Anfrage eingereicht", NotificationType.Success);
+ResetForm(frmAnfrage)</pre>
+      </div>
+      <div class="card">
+        <h2>Power Automate: Routing-Flow</h2>
+<pre>Trigger: Wenn ein Element erstellt wird (Rechtsanfragen)
+1  Zeile aus Routing-Tabelle holen
+   Filter: Kategorie eq triggerBody()?['Kategorie/Value']
+2  Frist = addDays(utcNow(), Tage je Priorität)
+   (Werktage über Hilfsliste Feiertage)
+3  Element aktualisieren: Zuständig, Frist
+4  Nachricht im Teams-Kanal des Teams posten
+5  Bestätigung an die anfragende Person
+Täglich 08:00: Elemente mit Frist &lt; heute
+   und Status ne 'Erledigt' → Erinnerung</pre>
+      </div>
+    </div>
+    <div class="card prose" style="max-width:none">
+      <h2>Was in diesem Prototyp vereinfacht ist</h2>
+      <ul class="prose">
+        <li>Die Daten liegen nur im Browser der Person, die die Seite öffnet. Es gibt keinen Server und keine echten Personen.</li>
+        <li>Der KI-Vorschlag ist regelbasiert (gewichtete Schlüsselbegriffe), damit er transparent bleibt. In Microsoft 365 würde ein AI-Builder-Modell zur Kategorisierung mit echten, anonymisierten Anfragen trainiert.</li>
+        <li>Fristen werden in Werktagen ohne Feiertage gerechnet.</li>
+      </ul>
+      <p class="note">Konzept und Umsetzung: Lise Danielle Zambou, Studentin der Wirtschaftsinformatik, Universität Siegen. November 2026.</p>
+    </div>
+  </section>
+
+  <footer>Prototyp mit Beispieldaten. Alle Namen und Anfragen sind erfunden.</footer>
+</main>
+
+<dialog id="dlg" aria-labelledby="d-title">
+  <div class="dlg">
+    <header>
+      <div><span class="tag" id="d-id"></span><h2 id="d-title" style="font-size:18px;margin-top:6px"></h2></div>
+      <button class="btn small ghost" id="d-close" type="button">Schließen</button>
+    </header>
+    <dl class="meta" id="d-meta"></dl>
+    <p id="d-text" style="margin:0;white-space:pre-wrap"></p>
+    <div>
+      <h3 style="font-size:14px;margin-bottom:6px">Status ändern</h3>
+      <div class="actions" id="d-actions"></div>
+    </div>
+    <div>
+      <h3 style="font-size:14px;margin-bottom:6px">Verlauf</h3>
+      <div class="log" id="d-log"></div>
+    </div>
+  </div>
+</dialog>
+
+<script>
+const CATS = {
+  "Vertragsprüfung": {team:"Team Verträge", kw:{"vertrag":3,"rahmenvertrag":4,"lieferant":2,"agb":3,"kündigung":2,"klausel":3,"haftung":2,"angebot":1,"bestellung":1,"laufzeit":2,"preisanpassung":2}},
+  "NDA / Geheimhaltung": {team:"Team Verträge", kw:{"nda":5,"geheimhaltung":5,"vertraulich":3,"verschwiegenheit":4,"know-how":2,"zeichnungen":1}},
+  "Datenschutz (DSGVO)": {team:"Datenschutz", kw:{"dsgvo":5,"datenschutz":5,"personenbezogen":4,"auskunft":3,"löschung":3,"auftragsverarbeitung":5,"avv":5,"cookie":3,"bewerberdaten":4,"einwilligung":3,"datenpanne":5}},
+  "Arbeitsrecht": {team:"Team Arbeitsrecht", kw:{"arbeitsvertrag":5,"mitarbeiter":2,"betriebsrat":4,"abmahnung":5,"homeoffice":3,"überstunden":3,"befristung":4,"werkstudent":2,"zeugnis":2}},
+  "Marken & Patente": {team:"IP-Team", kw:{"patent":5,"marke":4,"erfindung":4,"lizenz":3,"urheberrecht":4,"schutzrecht":4,"logo":2}},
+  "Compliance & Exportkontrolle": {team:"Compliance", kw:{"export":4,"exportkontrolle":5,"sanktion":5,"zoll":3,"dual-use":5,"ausfuhr":4,"geschenk":3,"bestechung":5,"hinweisgeber":4,"lieferkette":3}},
+  "KI-Nutzung": {team:"KI-Governance", kw:{"ki":4,"künstliche intelligenz":5,"chatgpt":5,"copilot":4,"ki-verordnung":5,"ai act":5,"chatbot":4,"modell":1,"automatisiert":2}},
+  "Sonstiges": {team:"Triage Rechtsabteilung", kw:{}}
+};
+const STATUS = ["Eingegangen","In Prüfung","Rückfrage","Erledigt"];
+const SLA = {hoch:2, mittel:5, niedrig:10};
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+
+function addWorkdays(d, n){ const x=new Date(d); let k=0; while(k<n){ x.setDate(x.getDate()+1); const w=x.getDay(); if(w!==0&&w!==6) k++; } return x; }
+function shift(days){ const d=new Date(TODAY); d.setDate(d.getDate()+days); return d; }
+function fmt(d){ return new Date(d).toLocaleDateString("de-DE",{day:"2-digit",month:"2-digit",year:"numeric"}); }
+function esc(s){ return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+
+/* KI-Vorschlag: gewichtete Schlüsselbegriffe, normalisiert zu einer Konfidenz */
+function classify(text){
+  const t = " " + text.toLowerCase() + " ";
+  const scores = {};
+  for (const [cat, def] of Object.entries(CATS)){
+    let s=0; const hits=[];
+    for (const [w,g] of Object.entries(def.kw)){
+      const re = new RegExp("(^|[^a-zäöüß])" + w.replace(/[-]/g,"\\-") + (w.length<=3 ? "(?![a-zäöüß])" : ""), "i");
+      if (re.test(t)){ s+=g; hits.push(w); }
+    }
+    scores[cat]={s,hits};
+  }
+  const ranked = Object.entries(scores).sort((a,b)=>b[1].s-a[1].s);
+  const total = ranked.reduce((a,[,v])=>a+v.s,0);
+  const [best,bv] = ranked[0];
+  if (!bv.s) return {cat:"Sonstiges", conf:0, hits:[]};
+  const conf = Math.round(100 * (bv.s/total) * Math.min(1, bv.s/6));
+  return {cat:best, conf, hits:bv.hits};
+}
+
+/* Erkennung personenbezogener Daten */
+const PII = [
+  {name:"E-Mail", re:/[\w.+-]+@[\w-]+\.[\w.-]+/g, ph:"[E-Mail]"},
+  {name:"IBAN", re:/\b[A-Z]{2}\d{2}(?:\s?[A-Z0-9]{4}){3,7}(?:\s?[A-Z0-9]{1,3})?\b/g, ph:"[IBAN]"},
+  {name:"Telefon", re:/(?:\+\d{2}|\b0)\d[\d\s/-]{6,}\d/g, ph:"[Telefon]"},
+  {name:"Geburtsdatum", re:/\b(?:geb\.?|geboren(?: am)?)\s*\d{1,2}\.\d{1,2}\.\d{2,4}/gi, ph:"[Geburtsdatum]"}
+];
+function findPII(text){ const out=[]; for(const p of PII){ const m=text.match(p.re); if(m) out.push(...m.map(v=>({type:p.name,v}))); } return out; }
+
+const SEED = [
+  ["Rahmenvertrag mit neuem Lieferanten für Optikkomponenten","Einkauf","Deutschland","Bitte Prüfung des Rahmenvertrags. Besonders die Haftung und die Klausel zur Preisanpassung bei einer Laufzeit von 3 Jahren.","hoch","In Prüfung",-4],
+  ["NDA für Gespräch mit Forschungspartner","Forschung & Entwicklung","Deutschland","Wir brauchen eine Geheimhaltungsvereinbarung (NDA), bevor wir technische Zeichnungen austauschen.","mittel","Eingegangen",-1],
+  ["Auftragsverarbeitung für neues HR-Tool","Personal","Deutschland","Neues Bewerbermanagement-Tool in der Cloud. Brauchen wir einen AVV und wie lange dürfen Bewerberdaten gespeichert werden?","hoch","Rückfrage",-6],
+  ["Ausfuhr einer Laserquelle in ein Drittland","Vertrieb","Italien","Kunde möchte eine Laserquelle in ein Land außerhalb der EU. Bitte Exportkontrolle und mögliche Sanktionen prüfen.","hoch","In Prüfung",-3],
+  ["Nutzung von Copilot für Vertragsentwürfe","IT","Deutschland","Dürfen wir Microsoft Copilot zum Erstellen von Vertragsentwürfen nutzen? Was sagt die KI-Verordnung (AI Act) dazu?","mittel","Eingegangen",0],
+  ["Markenanmeldung neuer Produktname","Marketing","Frankreich","Für die neue Produktlinie soll ein Name als Marke geschützt werden. Bitte Recherche und Anmeldung.","niedrig","Erledigt",-15],
+  ["Homeoffice-Regelung für Werkstudierende","Personal","Polen","Brauchen wir für Homeoffice eine Ergänzung zum Arbeitsvertrag?","niedrig","In Prüfung",-9],
+  ["Kündigung eines Wartungsvertrags","Produktion","Spanien","Wir möchten den Wartungsvertrag für eine Anlage kündigen. Welche Kündigungsfrist gilt laut Vertrag?","mittel","Erledigt",-12],
+  ["Auskunftsersuchen eines ehemaligen Kunden","Vertrieb","Vereinigtes Königreich","Ein ehemaliger Kunde verlangt Auskunft über seine gespeicherten personenbezogenen Daten.","hoch","Eingegangen",-1],
+  ["Lizenz für Simulationssoftware","Forschung & Entwicklung","Deutschland","Prüfung der Lizenzbedingungen. Dürfen wir die Ergebnisse kommerziell nutzen und gibt es Einschränkungen beim Urheberrecht?","mittel","Rückfrage",-8]
+];
+
+let items = [];
+function seed(){
+  items = SEED.map((r,i)=>{
+    const [titel,abt,land,text,prio,status,ago]=r;
+    const c=classify(text); const created=shift(ago);
+    const it={id:"LR-2026-"+String(101+i).padStart(4,"0"), titel, abt, land, text, prio, status, kat:c.cat, conf:c.conf, aiOk:true,
+      team:CATS[c.cat].team, created:created.toISOString(), frist:addWorkdays(created,SLA[prio]).toISOString(), pii:findPII(text).length>0||/personenbezogen|bewerberdaten/i.test(text), log:[]};
+    it.log.push({t:created.toISOString(), m:"Eingegangen, KI-Vorschlag „"+c.cat+"“ ("+c.conf+" %) bestätigt, an "+it.team+" weitergeleitet"});
+    if (status!=="Eingegangen") it.log.push({t:shift(ago+1).toISOString(), m:"Status → In Prüfung"});
+    if (status==="Rückfrage") it.log.push({t:shift(ago+3).toISOString(), m:"Status → Rückfrage (Unterlagen fehlen)"});
+    if (status==="Erledigt") it.log.push({t:shift(ago+5).toISOString(), m:"Status → Erledigt"});
+    return it;
+  });
+  items.find(x=>x.id==="LR-2026-0107").aiOk=false;
+}
+const KEY="legal-portal-v1";
+function load(){ try{ const s=localStorage.getItem(KEY); if(s){ items=JSON.parse(s); return; } }catch(e){} seed(); }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(items)); }catch(e){} }
+
+const $=s=>document.querySelector(s);
+const isLate=it=>it.status!=="Erledigt" && new Date(it.frist)<TODAY;
+
+function fillSelects(){
+  const opts=Object.keys(CATS).map(c=>`<option>${esc(c)}</option>`).join("");
+  $("#f-kat").innerHTML=opts; $("#fk").innerHTML='<option value="">Alle Kategorien</option>'+opts;
+}
+
+function renderKPIs(){
+  const open=items.filter(i=>i.status!=="Erledigt");
+  $("#k-open").textContent=open.length;
+  $("#k-new").textContent=items.filter(i=>i.status==="Eingegangen").length;
+  $("#k-late").textContent=items.filter(isLate).length;
+  $("#k-pii").textContent=items.filter(i=>i.pii).length;
+  $("#k-ai").textContent=(items.length?Math.round(100*items.filter(i=>i.aiOk).length/items.length):0)+" %";
+}
+
+function renderTable(){
+  const q=$("#q").value.trim().toLowerCase(), fs=$("#fs").value, fk=$("#fk").value;
+  const rows=items.filter(i=>(!fs||i.status===fs)&&(!fk||i.kat===fk)&&(!q||(i.id+" "+i.titel+" "+i.abt).toLowerCase().includes(q)))
+    .sort((a,b)=>(a.status==="Erledigt")-(b.status==="Erledigt") || new Date(a.frist)-new Date(b.frist));
+  $("#tb").innerHTML=rows.map(i=>`<tr data-id="${i.id}" tabindex="0">
+    <td class="id">${i.id}</td>
+    <td>${esc(i.titel)}<br><span class="note">${esc(i.abt)} · ${esc(i.land)}</span>${i.pii?' <span class="lock">· PbD</span>':''}</td>
+    <td>${esc(i.kat)}</td>
+    <td><span class="pill s-${i.status.replace(/ /g,"-")}">${i.status}</span></td>
+    <td><span class="prio p-${i.prio}">${i.prio}</span></td>
+    <td class="num ${isLate(i)?"late":""}">${fmt(i.frist)}${isLate(i)?" · überfällig":""}</td>
+    <td>${esc(i.team)}</td></tr>`).join("") || `<tr><td colspan="7" class="note">Keine Anfragen für diese Filter. Filter zurücksetzen, um alle zu sehen.</td></tr>`;
+  $("#count").textContent=rows.length+" von "+items.length+" Anfragen · Zeile anklicken für Details";
+}
+
+function bars(el, map){
+  const max=Math.max(1,...Object.values(map));
+  $(el).innerHTML=Object.entries(map).sort((a,b)=>b[1]-a[1]).map(([k,v])=>
+    `<div class="barrow"><span>${esc(k)}</span><div class="track"><div class="fill" style="width:${100*v/max}%"></div></div><b>${v}</b></div>`).join("");
+}
+function count(arr,f){ const m={}; arr.forEach(x=>{ const k=f(x); m[k]=(m[k]||0)+1; }); return m; }
+function renderStats(){
+  bars("#b-kat",count(items,i=>i.kat));
+  const st={}; STATUS.forEach(s=>st[s]=items.filter(i=>i.status===s).length); bars("#b-status",st);
+  bars("#b-land",count(items,i=>i.land));
+  bars("#b-team",count(items.filter(i=>i.status!=="Erledigt"),i=>i.team));
+}
+function renderAll(){ renderKPIs(); renderTable(); renderStats(); save(); }
+
+/* Formular */
+let touchedKat=false, lastAI=null;
+function updateAI(){
+  const text=$("#f-titel").value+" "+$("#f-text").value;
+  if(!$("#f-text").value.trim()){ $("#ai-cat").textContent="Bitte Beschreibung eingeben"; $("#ai-meter").style.width="0"; $("#ai-why").textContent="Die Zuordnung wird aus Schlüsselbegriffen im Text abgeleitet und ist nachvollziehbar."; lastAI=null; updateRoute(); return; }
+  const c=classify(text); lastAI=c;
+  $("#ai-cat").textContent=c.cat+" · Konfidenz "+c.conf+" %";
+  $("#ai-meter").style.width=c.conf+"%";
+  $("#ai-why").textContent=c.hits.length?"Erkannte Begriffe: "+c.hits.join(", ")+(c.conf<50?". Unsicher, bitte Kategorie prüfen.":""):"Keine typischen Begriffe gefunden, daher „Sonstiges“. Bitte Kategorie selbst wählen.";
+  if(!touchedKat) $("#f-kat").value=c.cat;
+  const p=findPII($("#f-text").value);
+  $("#pii").hidden=!p.length;
+  $("#pii-tags").innerHTML=p.map(x=>`<span class="tag">${esc(x.type)}: ${esc(x.v)}</span>`).join("");
+  updateRoute();
+}
+function updateRoute(){
+  const k=$("#f-kat").value, pr=$("#f-prio").value;
+  $("#route").textContent="Zuständig: "+CATS[k].team+" · Frist: "+fmt(addWorkdays(TODAY,SLA[pr]))+" ("+SLA[pr]+" Arbeitstage)";
+}
+$("#f-text").addEventListener("input",updateAI);
+$("#f-titel").addEventListener("input",updateAI);
+$("#f-kat").addEventListener("change",()=>{touchedKat=true;updateRoute();});
+$("#f-prio").addEventListener("change",updateRoute);
+$("#pseudo").addEventListener("click",()=>{ let t=$("#f-text").value; PII.forEach(p=>t=t.replace(p.re,p.ph)); $("#f-text").value=t; updateAI(); });
+$("#demo").addEventListener("click",()=>{
+  $("#f-titel").value="Datenpanne: Excel-Liste mit Kundendaten falsch versendet";
+  $("#f-text").value="Eine Kollegin hat eine Liste mit Kundendaten versehentlich an einen externen Partner geschickt (max.mustermann@example.com, Tel. 0271 123456). Müssen wir das nach DSGVO als Datenpanne melden?";
+  $("#f-prio").value="hoch"; touchedKat=false; updateAI();
+});
+$("#f").addEventListener("submit",e=>{
+  e.preventDefault();
+  const titel=$("#f-titel").value.trim(), text=$("#f-text").value.trim();
+  if(!titel||!text){ $("#f-msg").textContent="Bitte Betreff und Beschreibung ausfüllen."; return; }
+  const kat=$("#f-kat").value, prio=$("#f-prio").value, ai=lastAI||classify(titel+" "+text);
+  const n=Math.max(100,...items.map(i=>+i.id.slice(-4)))+1;
+  const it={id:"LR-2026-"+String(n).padStart(4,"0"), titel, abt:$("#f-abt").value, land:$("#f-land").value, text, prio, status:"Eingegangen",
+    kat, conf:ai.conf, aiOk:kat===ai.cat, team:CATS[kat].team, created:new Date().toISOString(), frist:addWorkdays(TODAY,SLA[prio]).toISOString(),
+    pii:findPII(text).length>0, log:[]};
+  it.log.push({t:it.created, m:"Eingegangen, KI-Vorschlag „"+ai.cat+"“ ("+ai.conf+" %) "+(it.aiOk?"bestätigt":"geändert zu „"+kat+"“")+", an "+it.team+" weitergeleitet"});
+  items.unshift(it); renderAll();
+  $("#f").reset(); touchedKat=false; updateAI(); $("#pii").hidden=true;
+  $("#f-msg").textContent=it.id+" eingereicht und an "+it.team+" weitergeleitet.";
+});
+
+/* Detail */
+let current=null;
+function openDetail(id){
+  const i=items.find(x=>x.id===id); if(!i) return; current=i;
+  $("#d-id").textContent=i.id; $("#d-title").textContent=i.titel;
+  $("#d-meta").innerHTML=[["Status",`<span class="pill s-${i.status.replace(/ /g,"-")}">${i.status}</span>`],["Kategorie",esc(i.kat)+` <span class="note">(KI ${i.conf} %, ${i.aiOk?"übernommen":"korrigiert"})</span>`],["Zuständig",esc(i.team)],["Anfrage von",esc(i.abt)+", "+esc(i.land)],["Eingang",fmt(i.created)],["Frist",fmt(i.frist)+(isLate(i)?' <span class="late">überfällig</span>':"")],["Personenbez. Daten",i.pii?"ja, eingeschränkter Zugriff":"nein"]]
+    .map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join("");
+  $("#d-text").textContent=i.text;
+  $("#d-actions").innerHTML=STATUS.map(s=>`<button class="btn small ${s===i.status?"":"ghost"}" data-s="${s}" ${s===i.status?"disabled":""}>${s}</button>`).join("");
+  $("#d-log").innerHTML=i.log.slice().reverse().map(l=>`<div><time>${fmt(l.t)}</time>${esc(l.m)}</div>`).join("");
+  if(!$("#dlg").open) $("#dlg").showModal();
+}
+$("#d-actions").addEventListener("click",e=>{ const s=e.target.dataset.s; if(!s||!current) return; current.status=s; current.log.push({t:new Date().toISOString(), m:"Status → "+s}); renderAll(); openDetail(current.id); });
+$("#d-close").addEventListener("click",()=>$("#dlg").close());
+$("#tb").addEventListener("click",e=>{ const tr=e.target.closest("tr[data-id]"); if(tr) openDetail(tr.dataset.id); });
+$("#tb").addEventListener("keydown",e=>{ if(e.key==="Enter"){ const tr=e.target.closest("tr[data-id]"); if(tr) openDetail(tr.dataset.id); } });
+["#q","#fs","#fk"].forEach(s=>$(s).addEventListener("input",renderTable));
+
+/* Ansichten über #hash */
+function route(){
+  const v=(location.hash||"#anfragen").slice(1);
+  const name=["anfragen","auswertung","umsetzung"].includes(v)?v:"anfragen";
+  document.querySelectorAll(".view").forEach(el=>el.classList.toggle("active",el.id==="v-"+name));
+  document.querySelectorAll("nav a").forEach(a=>{ if(a.dataset.view===name) a.setAttribute("aria-current","page"); else a.removeAttribute("aria-current"); });
+}
+window.addEventListener("hashchange",route);
+
+load(); fillSelects(); route(); updateAI(); renderAll();
+</script>
+</body>
+</html>

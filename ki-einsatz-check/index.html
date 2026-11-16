@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KI-Einsatz-Check</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@400;600;700&family=Source+Serif+4:opsz,wght@8..60,600;8..60,700&display=swap" rel="stylesheet">
+<style>
+/* Layout: Fragebogen links in nummerierten Abschnitten, Ergebnis rechts als mitlaufendes Prüfmemo. */
+:root{
+  --bg:#f5f6f8; --surface:#ffffff; --ink:#1a2233; --muted:#5d6779; --line:#d9dee6;
+  --accent:#1f3a68; --accent-soft:#e6ecf6; --mark:#b86e00;
+  --ok:#1f7a4d; --ok-bg:#e3f4ea; --warn:#9a5b00; --warn-bg:#fdf1dc; --crit:#b3261e; --crit-bg:#fbe5e3; --info:#2a5db0; --info-bg:#e5edfa;
+  --display:"Source Serif 4",Georgia,serif;
+  --body:"Source Sans 3",system-ui,-apple-system,"Segoe UI",sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#10141c; --surface:#181e29; --ink:#e7ebf2; --muted:#9ba5b6; --line:#2a3242;
+    --accent:#9db8e8; --accent-soft:#1c2840; --mark:#f0b75c;
+    --ok:#6fd39c; --ok-bg:#163326; --warn:#f0b75c; --warn-bg:#3a2a10; --crit:#f08a82; --crit-bg:#3d1c1a; --info:#8db3f2; --info-bg:#1b2a44;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#10141c; --surface:#181e29; --ink:#e7ebf2; --muted:#9ba5b6; --line:#2a3242;
+  --accent:#9db8e8; --accent-soft:#1c2840; --mark:#f0b75c;
+  --ok:#6fd39c; --ok-bg:#163326; --warn:#f0b75c; --warn-bg:#3a2a10; --crit:#f08a82; --crit-bg:#3d1c1a; --info:#8db3f2; --info-bg:#1b2a44;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 var(--body)}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;margin:0;font-weight:700}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+header.top{background:var(--surface);border-bottom:1px solid var(--line)}
+.wrap{max-width:1240px;margin:0 auto;padding:0 16px}
+header.top .wrap{padding-top:22px;padding-bottom:18px;display:grid;gap:6px}
+header.top h1{font-size:28px}
+header.top p{margin:0;color:var(--muted);max-width:75ch}
+.presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;align-items:center}
+.presets span{font-size:14px;color:var(--muted)}
+.chip{border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:4px 12px;font-size:14px;cursor:pointer}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+main.wrap{display:grid;grid-template-columns:1fr minmax(320px,440px);gap:20px;padding-top:20px;padding-bottom:48px;align-items:start}
+@media (max-width:920px){main.wrap{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:18px}
+form{display:grid;gap:16px}
+fieldset{border:1px solid var(--line);border-radius:10px;padding:16px 18px;margin:0;background:var(--surface);display:grid;gap:10px}
+legend{font-family:var(--display);font-weight:700;font-size:18px;padding:0 6px}
+legend small{font-family:var(--body);font-weight:600;color:var(--mark);font-size:13px;margin-right:6px}
+.q{font-size:14px;color:var(--muted);margin:0}
+label.opt{display:grid;grid-template-columns:20px 1fr;gap:10px;align-items:start;padding:6px 8px;border-radius:6px;cursor:pointer}
+label.opt:hover{background:var(--accent-soft)}
+label.opt input{margin-top:4px;width:16px;height:16px;accent-color:var(--accent)}
+label.opt em{display:block;font-style:normal;font-size:13px;color:var(--muted)}
+.ref{font-size:12px;color:var(--muted);font-weight:600;white-space:nowrap}
+.field{display:grid;gap:4px;font-size:14px;font-weight:600}
+.field input,.field textarea{border:1px solid var(--line);background:var(--bg);border-radius:6px;padding:8px 10px;font-weight:400}
+.field textarea{min-height:70px;resize:vertical}
+.radios{display:flex;gap:6px;flex-wrap:wrap}
+.radios label{border:1px solid var(--line);border-radius:6px;padding:6px 12px;cursor:pointer;font-size:14px;display:flex;gap:6px;align-items:center}
+.radios input{accent-color:var(--accent)}
+
+aside{position:sticky;top:16px;display:grid;gap:14px}
+.verdict{border-radius:10px;padding:16px 18px;border:1px solid var(--line);border-left:6px solid var(--muted);background:var(--surface)}
+.verdict .lvl{font-size:13px;font-weight:700;text-transform:uppercase;letter-spacing:.05em}
+.verdict h2{font-size:22px;margin:2px 0 6px}
+.verdict p{margin:0;font-size:15px}
+.v-verboten{border-left-color:var(--crit);background:var(--crit-bg)} .v-verboten .lvl{color:var(--crit)}
+.v-hoch{border-left-color:var(--warn);background:var(--warn-bg)} .v-hoch .lvl{color:var(--warn)}
+.v-transparenz{border-left-color:var(--info);background:var(--info-bg)} .v-transparenz .lvl{color:var(--info)}
+.v-minimal{border-left-color:var(--ok);background:var(--ok-bg)} .v-minimal .lvl{color:var(--ok)}
+.ladder{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;font-size:11px;text-align:center;font-weight:600}
+.ladder div{padding:5px 2px;border-radius:4px;background:var(--bg);color:var(--muted);border:1px solid var(--line)}
+.ladder div.on{color:var(--surface);border-color:transparent}
+.ladder .l-minimal.on{background:var(--ok)} .ladder .l-transparenz.on{background:var(--info)} .ladder .l-hoch.on{background:var(--warn)} .ladder .l-verboten.on{background:var(--crit)}
+.todo h3{font-size:16px;margin-bottom:8px}
+.todo ol{margin:0;padding-left:20px;display:grid;gap:8px;font-size:15px}
+.todo li small{display:block;color:var(--muted);font-size:13px}
+.dates{display:grid;gap:4px;font-size:14px}
+.dates div{display:grid;grid-template-columns:96px 1fr;gap:10px}
+.dates b{font-variant-numeric:tabular-nums}
+.dates .past{color:var(--muted)}
+.btn{border:1px solid var(--accent);background:var(--accent);color:var(--surface);border-radius:6px;padding:8px 14px;font-weight:600;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--accent)}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.small{font-size:13px;color:var(--muted)}
+footer{grid-column:1/-1;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:14px;display:grid;gap:4px}
+footer a{color:var(--accent)}
+textarea#memo{position:absolute;left:-9999px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="wrap">
+    <h1>KI-Einsatz-Check für die Rechtsabteilung</h1>
+    <p>Erste Einordnung eines geplanten KI-Einsatzes nach der EU-KI-Verordnung (AI Act) und der DSGVO. Das Ergebnis ist eine Checkliste für das Gespräch mit der Rechtsabteilung und ersetzt keine rechtliche Prüfung.</p>
+    <div class="presets" role="group" aria-label="Beispiele laden">
+      <span>Beispiele:</span>
+      <button class="chip" type="button" data-preset="copilot">Copilot für Vertragsentwürfe</button>
+      <button class="chip" type="button" data-preset="recruiting">KI-Vorauswahl von Bewerbungen</button>
+      <button class="chip" type="button" data-preset="chatbot">Intranet-Chatbot zu Richtlinien</button>
+      <button class="chip" type="button" data-preset="emotion">Stimmungsanalyse in Teams-Calls</button>
+      <button class="chip" type="button" data-preset="leer">Leeres Formular</button>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+  <form id="f" novalidate>
+    <fieldset>
+      <legend><small>1</small>Anwendungsfall</legend>
+      <label class="field" for="name">Name des KI-Einsatzes
+        <input id="name" maxlength="80">
+      </label>
+      <label class="field" for="zweck">Wofür wird die KI genutzt?
+        <textarea id="zweck"></textarea>
+      </label>
+      <p class="q">Welche Rolle hat das Unternehmen?</p>
+      <div class="radios" role="radiogroup" aria-label="Rolle">
+        <label><input type="radio" name="rolle" id="r-betreiber" value="betreiber"> Betreiber: nutzt ein fremdes KI-System</label>
+        <label><input type="radio" name="rolle" id="r-anbieter" value="anbieter"> Anbieter: entwickelt selbst oder vertreibt unter eigenem Namen</label>
+      </div>
+    </fieldset>
+
+    <fieldset>
+      <legend><small>2</small>Verbotene Praktiken</legend>
+      <p class="q">Trifft eines davon zu? Dann darf das System in der EU nicht eingesetzt werden (Art. 5).</p>
+      <label class="opt"><input type="checkbox" id="p-emo"><span>Erkennt Emotionen von Beschäftigten am Arbeitsplatz oder von Lernenden <em>Ausnahme nur aus medizinischen oder Sicherheitsgründen</em></span></label>
+      <label class="opt"><input type="checkbox" id="p-manip"><span>Beeinflusst Menschen unterschwellig oder nutzt Schwächen aus (Alter, Behinderung, soziale Lage), sodass erheblicher Schaden droht</span></label>
+      <label class="opt"><input type="checkbox" id="p-score"><span>Bewertet Personen nach sozialem Verhalten oder Persönlichkeit und benachteiligt sie dadurch (Social Scoring)</span></label>
+      <label class="opt"><input type="checkbox" id="p-bio"><span>Leitet aus biometrischen Daten Merkmale wie ethnische Herkunft, politische Meinung, Religion oder sexuelle Orientierung ab</span></label>
+      <label class="opt"><input type="checkbox" id="p-scrape"><span>Baut Gesichtsdatenbanken durch ungezieltes Auslesen von Bildern aus dem Internet oder von Kameras auf</span></label>
+    </fieldset>
+
+    <fieldset>
+      <legend><small>3</small>Hochrisiko-Bereiche</legend>
+      <p class="q">Wird die KI in einem dieser Bereiche eingesetzt? (Art. 6 mit Anhang I und III)</p>
+      <label class="opt"><input type="checkbox" id="h-hr"><span>Personal: Stellenanzeigen gezielt ausspielen, Bewerbungen filtern oder bewerten, Entscheidungen über Beförderung, Kündigung, Aufgabenverteilung oder Leistungsüberwachung <span class="ref">Anhang III Nr. 4</span></span></label>
+      <label class="opt"><input type="checkbox" id="h-bio"><span>Biometrische Fernidentifizierung oder Kategorisierung von Personen <span class="ref">Anhang III Nr. 1</span></span></label>
+      <label class="opt"><input type="checkbox" id="h-krit"><span>Sicherheitsbauteil in kritischer Infrastruktur (Strom, Wasser, Verkehr, digitale Infrastruktur) <span class="ref">Anhang III Nr. 2</span></span></label>
+      <label class="opt"><input type="checkbox" id="h-kredit"><span>Kreditwürdigkeit von Personen oder Preise für Lebens- und Krankenversicherungen <span class="ref">Anhang III Nr. 5</span></span></label>
+      <label class="opt"><input type="checkbox" id="h-prod"><span>Sicherheitsbauteil eines Produkts, das schon EU-Produktrecht unterliegt (z. B. Maschinen, Medizinprodukte) <span class="ref">Anhang I</span></span></label>
+      <label class="opt"><input type="checkbox" id="h-ausnahme"><span>Die KI erledigt nur eine eng begrenzte oder vorbereitende Aufgabe und erstellt keine Profile von Personen <em>Kann die Einstufung als Hochrisiko aufheben (Art. 6 Abs. 3). Muss dokumentiert werden.</em></span></label>
+    </fieldset>
+
+    <fieldset>
+      <legend><small>4</small>Transparenz</legend>
+      <label class="opt"><input type="checkbox" id="t-chat"><span>Menschen sprechen oder schreiben direkt mit der KI (Chatbot, Sprachassistent) <span class="ref">Art. 50 Abs. 1</span></span></label>
+      <label class="opt"><input type="checkbox" id="t-gen"><span>Die KI erzeugt Texte, Bilder, Audio oder Videos <span class="ref">Art. 50 Abs. 2 und 4</span></span></label>
+      <label class="opt"><input type="checkbox" id="t-deep"><span>Es entstehen täuschend echte Bilder, Videos oder Stimmen echter Personen (Deepfakes) <span class="ref">Art. 50 Abs. 4</span></span></label>
+    </fieldset>
+
+    <fieldset>
+      <legend><small>5</small>Datenschutz und Vertraulichkeit</legend>
+      <label class="opt"><input type="checkbox" id="d-pbd"><span>Es werden personenbezogene Daten verarbeitet (auch Namen in Verträgen oder E-Mails)</span></label>
+      <label class="opt"><input type="checkbox" id="d-art9"><span>Darunter besondere Kategorien: Gesundheit, Gewerkschaft, Religion, Biometrie <span class="ref">Art. 9 DSGVO</span></span></label>
+      <label class="opt"><input type="checkbox" id="d-cloud"><span>Ein externer Anbieter verarbeitet die Daten (Cloud, SaaS) <span class="ref">Art. 28 DSGVO</span></span></label>
+      <label class="opt"><input type="checkbox" id="d-dritt"><span>Daten gehen in ein Land außerhalb des EWR, z. B. die USA <span class="ref">Art. 44 ff. DSGVO</span></span></label>
+      <label class="opt"><input type="checkbox" id="d-auto"><span>Die KI trifft Entscheidungen über Personen ohne menschliche Prüfung <span class="ref">Art. 22 DSGVO</span></span></label>
+      <label class="opt"><input type="checkbox" id="d-geheim"><span>Es werden vertrauliche Unterlagen eingegeben: Verträge, Geschäftsgeheimnisse, Rechtsstreitigkeiten</span></label>
+    </fieldset>
+  </form>
+
+  <aside aria-live="polite">
+    <div class="verdict" id="verdict">
+      <div class="lvl" id="v-lvl"></div>
+      <h2 id="v-title"></h2>
+      <p id="v-text"></p>
+    </div>
+    <div class="ladder" aria-hidden="true">
+      <div class="l-minimal">Minimal</div><div class="l-transparenz">Transparenz</div><div class="l-hoch">Hochrisiko</div><div class="l-verboten">Verboten</div>
+    </div>
+    <div class="card todo">
+      <h3>Nächste Schritte</h3>
+      <ol id="todo"></ol>
+    </div>
+    <div class="card">
+      <h3 style="font-size:16px;margin-bottom:8px">Wichtige Fristen</h3>
+      <div class="dates" id="dates"></div>
+    </div>
+    <div class="row">
+      <button class="btn" type="button" id="copy">Ergebnis als Text kopieren</button>
+      <span class="small" id="copymsg" role="status"></span>
+    </div>
+    <textarea id="memo" aria-hidden="true" tabindex="-1"></textarea>
+  </aside>
+
+  <footer>
+    <span>Rechtsstand: November 2026. Berücksichtigt die Änderungen durch den „Digital Omnibus“ zur KI-Verordnung (in Kraft seit Juli 2026), u. a. die Verschiebung der Hochrisiko-Pflichten.</span>
+    <span>Quellen: <a href="https://eur-lex.europa.eu/eli/reg/2024/1689/oj">Verordnung (EU) 2024/1689</a> · <a href="https://artificialintelligenceact.eu/ai-act-explorer/digital-omnibus/">Überblick Digital Omnibus</a> · <a href="https://eur-lex.europa.eu/eli/reg/2016/679/oj">DSGVO</a></span>
+    <span>Studienprojekt von Lise Danielle Zambou (Wirtschaftsinformatik, Universität Siegen). Keine Rechtsberatung.</span>
+  </footer>
+</main>
+
+<script>
+const $=s=>document.querySelector(s);
+const IDS=["p-emo","p-manip","p-score","p-bio","p-scrape","h-hr","h-bio","h-krit","h-kredit","h-prod","h-ausnahme","t-chat","t-gen","t-deep","d-pbd","d-art9","d-cloud","d-dritt","d-auto","d-geheim"];
+const PRESETS={
+  copilot:{name:"Microsoft 365 Copilot für Vertragsentwürfe",zweck:"Juristinnen und Juristen lassen sich erste Entwürfe von Vertragsklauseln und Zusammenfassungen langer Verträge erstellen. Ergebnisse werden immer geprüft.",rolle:"betreiber",on:["d-pbd","d-cloud","d-geheim"]},
+  recruiting:{name:"KI-Vorauswahl von Bewerbungen",zweck:"Ein Tool bewertet eingehende Lebensläufe und sortiert die Bewerbungen nach Passung für die Fachabteilung.",rolle:"betreiber",on:["h-hr","d-pbd","d-cloud","d-dritt"]},
+  chatbot:{name:"Intranet-Chatbot zu internen Richtlinien",zweck:"Beschäftigte stellen Fragen zu Compliance-Richtlinien (z. B. Geschenke, Reisekosten) und erhalten Antworten mit Verweis auf das Dokument.",rolle:"anbieter",on:["t-chat","d-cloud"]},
+  emotion:{name:"Stimmungsanalyse in Teams-Calls",zweck:"Eine Software erkennt in Videokonferenzen die Stimmung der Mitarbeitenden, um Führungskräften Hinweise auf Motivation zu geben.",rolle:"betreiber",on:["p-emo","h-bio","d-pbd","d-art9","d-cloud"]},
+  leer:{name:"",zweck:"",rolle:"betreiber",on:[]}
+};
+function setPreset(k){
+  const p=PRESETS[k];
+  $("#name").value=p.name; $("#zweck").value=p.zweck;
+  document.getElementById("r-"+p.rolle).checked=true;
+  IDS.forEach(id=>document.getElementById(id).checked=p.on.includes(id));
+  document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed",c.dataset.preset===k));
+  evaluate();
+}
+const on=id=>document.getElementById(id).checked;
+
+const TODAY=new Date("2026-11-16");
+const DATES=[
+  ["02.02.2025","Verbote (Art. 5) und Pflicht zur KI-Kompetenz der Beschäftigten (Art. 4)", new Date("2025-02-02")],
+  ["02.08.2025","Pflichten für Anbieter von KI-Modellen mit allgemeinem Verwendungszweck (GPAI)", new Date("2025-08-02")],
+  ["02.08.2026","Transparenzpflichten für Chatbots und KI-Inhalte (Art. 50)", new Date("2026-08-02")],
+  ["02.12.2026","Kennzeichnung KI-generierter Inhalte für Systeme, die schon vor August 2026 im Markt waren; neues Verbot von KI-Nacktbildern", new Date("2026-12-02")],
+  ["02.12.2027","Hochrisiko-Pflichten für Anhang-III-Systeme (z. B. Personal)", new Date("2027-12-02")],
+  ["02.08.2028","Hochrisiko-Pflichten für KI in Produkten nach Anhang I", new Date("2028-08-02")]
+];
+
+function evaluate(){
+  const rolle=document.querySelector('input[name="rolle"]:checked')?.value||"betreiber";
+  const verboten=["p-emo","p-manip","p-score","p-bio","p-scrape"].some(on);
+  const annexIII=["h-hr","h-bio","h-krit","h-kredit"].some(on);
+  const annexI=on("h-prod");
+  // Profiling schließt die Ausnahme aus; bei Personalentscheidungen wird fast immer profiliert
+  const ausnahme=on("h-ausnahme") && !on("d-auto");
+  const hoch=(annexIII && !ausnahme) || annexI;
+  const transp=["t-chat","t-gen","t-deep"].some(on);
+  let lvl, title, text;
+  if(verboten){ lvl="verboten"; title="Einsatz nicht zulässig"; text="Mindestens eine angekreuzte Funktion ist in der EU verboten (Art. 5 KI-Verordnung). Das System darf so nicht eingeführt werden. Bußgelder bis 35 Mio. € oder 7 % des weltweiten Jahresumsatzes."; }
+  else if(hoch){ lvl="hoch"; title="Hochrisiko-KI-System"; text=rolle==="anbieter"?"Als Anbieter gelten umfangreiche Pflichten: Risikomanagement, Datenqualität, technische Dokumentation, Konformitätsbewertung und Registrierung.":"Als Betreiber muss das Unternehmen das System nach Anleitung nutzen, menschliche Aufsicht sicherstellen und Protokolle aufbewahren (Art. 26)."; }
+  else if(transp){ lvl="transparenz"; title="Begrenztes Risiko: Transparenzpflichten"; text="Der Einsatz ist erlaubt. Menschen müssen aber erkennen können, dass sie mit einer KI sprechen oder dass Inhalte KI-generiert sind (Art. 50)."; }
+  else { lvl="minimal"; title="Minimales Risiko"; text="Die KI-Verordnung stellt hier keine besonderen Pflichten auf, außer der KI-Kompetenz der Beschäftigten. Wichtig bleiben DSGVO und Vertraulichkeit."; }
+  if(annexIII && ausnahme && !verboten && !annexI) text+=" Die Ausnahme nach Art. 6 Abs. 3 wurde angenommen. Die Begründung muss vor dem Einsatz dokumentiert werden.";
+
+  const v=$("#verdict"); v.className="verdict v-"+lvl;
+  $("#v-lvl").textContent={verboten:"Stufe 4 von 4",hoch:"Stufe 3 von 4",transparenz:"Stufe 2 von 4",minimal:"Stufe 1 von 4"}[lvl];
+  $("#v-title").textContent=title; $("#v-text").textContent=text;
+  document.querySelectorAll(".ladder div").forEach(d=>d.classList.toggle("on",d.classList.contains("l-"+lvl)));
+
+  const t=[];
+  if(verboten) t.push(["Einführung stoppen und Anbieter informieren","Prüfen, ob die verbotene Funktion vollständig abgeschaltet werden kann. Danach neu bewerten."]);
+  if(hoch && !verboten){
+    if(rolle==="betreiber"){
+      t.push(["Menschliche Aufsicht festlegen","Wer prüft die Ergebnisse, wer darf übersteuern? Diese Personen schulen (Art. 26 Abs. 2)."]);
+      t.push(["Protokolle mindestens 6 Monate aufbewahren","Automatisch erzeugte Logs des Systems sichern (Art. 26 Abs. 6)."]);
+      if(on("h-hr")) t.push(["Betriebsrat und Beschäftigte vorab informieren","Pflicht vor dem Einsatz am Arbeitsplatz (Art. 26 Abs. 7). Mitbestimmung nach § 87 Abs. 1 Nr. 6 BetrVG prüfen."]);
+      t.push(["Betroffene informieren","Personen, über die das System Entscheidungen vorbereitet, müssen davon wissen (Art. 26 Abs. 11)."]);
+      t.push(["Nachweise vom Anbieter anfordern","CE-Kennzeichnung, Gebrauchsanweisung, Eintrag in der EU-Datenbank."]);
+    } else {
+      t.push(["Risikomanagement und technische Dokumentation aufbauen","Art. 9 bis 15: Datenqualität, Logging, Genauigkeit, Robustheit, Cybersicherheit."]);
+      t.push(["Konformitätsbewertung und Registrierung planen","Vor dem Inverkehrbringen, inkl. CE-Kennzeichnung (Art. 43, 49)."]);
+    }
+    t.push(["Zeitplan festhalten", on("h-prod")?"Pflichten für Anhang-I-Produkte gelten ab 02.08.2028.":"Pflichten für Anhang-III-Systeme gelten ab 02.12.2027."]);
+  }
+  if(annexIII && ausnahme && !hoch && !verboten) t.push(["Ausnahme nach Art. 6 Abs. 3 dokumentieren","Begründen, warum das System nur eine begrenzte oder vorbereitende Aufgabe hat. Als Anbieter zusätzlich registrieren."]);
+  if(on("t-chat")) t.push(["Chatbot als KI kennzeichnen","Hinweis direkt beim ersten Kontakt, z. B. „Sie schreiben mit einem KI-Assistenten“."]);
+  if(on("t-gen")||on("t-deep")) t.push(["KI-generierte Inhalte kennzeichnen","Maschinenlesbare Markierung und bei Deepfakes ein sichtbarer Hinweis."]);
+  if(on("d-pbd")){
+    t.push(["Rechtsgrundlage und Zweck festlegen","Art. 6 DSGVO; Eintrag im Verzeichnis der Verarbeitungstätigkeiten (Art. 30)."]);
+    if(hoch||on("d-art9")||on("d-auto")||on("h-hr")) t.push(["Datenschutz-Folgenabschätzung durchführen","Neue Technologie mit hohem Risiko für Betroffene (Art. 35 DSGVO). Datenschutzbeauftragte einbinden."]);
+    if(on("d-art9")) t.push(["Ausnahme nach Art. 9 Abs. 2 prüfen","Besondere Kategorien dürfen nur in engen Fällen verarbeitet werden."]);
+  }
+  if(on("d-cloud")) t.push(["Auftragsverarbeitungsvertrag abschließen","Art. 28 DSGVO; Nutzung der Eingaben zum Training vertraglich ausschließen."]);
+  if(on("d-dritt")) t.push(["Drittlandübermittlung absichern","Angemessenheitsbeschluss (z. B. EU-US Data Privacy Framework) oder Standardvertragsklauseln prüfen."]);
+  if(on("d-auto")) t.push(["Keine rein automatisierten Entscheidungen","Ein Mensch muss Entscheidungen mit rechtlicher Wirkung inhaltlich prüfen (Art. 22 DSGVO)."]);
+  if(on("d-geheim")) t.push(["Nur freigegebene Unternehmens-KI nutzen","Vertrauliche Unterlagen nicht in öffentliche Tools eingeben. Interne Richtlinie zur KI-Nutzung verlinken."]);
+  t.push(["Beschäftigte zur KI-Nutzung schulen","KI-Kompetenz nach Art. 4 KI-Verordnung, z. B. kurzes E-Learning und Richtlinie."]);
+  $("#todo").innerHTML=t.map(([a,b])=>`<li><b>${a}</b><small>${b}</small></li>`).join("");
+
+  $("#dates").innerHTML=DATES.map(([d,txt,dt])=>`<div class="${dt<TODAY?"past":""}"><b>${d}</b><span>${txt}${dt<TODAY?" (gilt bereits)":""}</span></div>`).join("");
+
+  const name=$("#name").value.trim()||"Ohne Namen";
+  $("#memo").value=`KI-Einsatz-Check: ${name}\nRolle: ${rolle==="anbieter"?"Anbieter":"Betreiber"}\nZweck: ${$("#zweck").value.trim()||"-"}\n\nErgebnis: ${title}\n${text}\n\nNächste Schritte:\n`+t.map(([a,b],i)=>`${i+1}. ${a}: ${b}`).join("\n")+`\n\nErste Einordnung, keine Rechtsberatung. Stand November 2026.`;
+}
+
+document.querySelectorAll(".chip").forEach(c=>c.addEventListener("click",()=>setPreset(c.dataset.preset)));
+$("#f").addEventListener("input",()=>{ document.querySelectorAll(".chip").forEach(c=>c.setAttribute("aria-pressed","false")); evaluate(); });
+$("#copy").addEventListener("click",async()=>{
+  try{ await navigator.clipboard.writeText($("#memo").value); $("#copymsg").textContent="Kopiert. Zum Beispiel in eine E-Mail an die Rechtsabteilung einfügen."; }
+  catch(e){ $("#copymsg").textContent="Kopieren wurde vom Browser blockiert."; }
+});
+setPreset("recruiting");
+</script>
+</body>
+</html>
