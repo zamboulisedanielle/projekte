@@ -1,0 +1,41 @@
+{% load static %}<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}ZeitWerk{% endblock %} · ZeitWerk</title>
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body>
+{% if user.is_authenticated %}
+<div class="layout">
+  <aside class="sidebar">
+    <a class="brand" href="{% url 'dashboard' %}"><span class="logo">⏱</span> ZeitWerk</a>
+    {% with u=request.resolver_match.url_name %}
+    <nav>
+      <a href="{% url 'dashboard' %}" class="{% if u == 'dashboard' %}active{% endif %}">Übersicht</a>
+      <a href="{% url 'entry_list' %}" class="{% if 'entry' in u %}active{% endif %}">Zeiten</a>
+      <a href="{% url 'project_list' %}" class="{% if 'project' in u %}active{% endif %}">Projekte</a>
+      <a href="{% url 'customer_list' %}" class="{% if 'customer' in u %}active{% endif %}">Kunden</a>
+      <a href="{% url 'invoice_list' %}" class="{% if 'invoice' in u %}active{% endif %}">Rechnungen</a>
+    </nav>
+    {% endwith %}
+    <div class="sidebar-foot">
+      <span>Angemeldet als <strong>{{ user.username }}</strong></span>
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button class="link">Abmelden</button></form>
+    </div>
+  </aside>
+  <main class="content">
+    <header class="page-head">
+      <h1>{% block heading %}{% endblock %}</h1>
+      <div class="actions">{% block actions %}<a class="btn" href="{% url 'entry_create' %}">+ Zeit erfassen</a>{% endblock %}</div>
+    </header>
+    {% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}
+    {% block content %}{% endblock %}
+  </main>
+</div>
+{% else %}
+  {% block public %}{% endblock %}
+{% endif %}
+</body>
+</html>

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Kunden{% endblock %}
+{% block heading %}Kunden{% endblock %}
+{% block actions %}<a class="btn" href="{% url 'customer_create' %}">+ Neuer Kunde</a>{% endblock %}
+{% block content %}
+<section class="card">
+  <table>
+    <thead><tr><th>Firma</th><th>Ansprechpartner</th><th>Ort</th><th class="num">Projekte</th></tr></thead>
+    <tbody>
+    {% for c in object_list %}
+      <tr><td><a href="{{ c.get_absolute_url }}">{{ c.name }}</a></td><td>{{ c.contact_person }}</td><td>{{ c.city }}</td><td class="num">{{ c.project_count }}</td></tr>
+    {% empty %}<tr><td colspan="4" class="muted">Noch keine Kunden.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

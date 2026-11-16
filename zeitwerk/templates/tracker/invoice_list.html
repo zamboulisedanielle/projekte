@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Rechnungen{% endblock %}
+{% block heading %}Rechnungen{% endblock %}
+{% block actions %}<a class="btn" href="{% url 'invoice_create' %}">+ Rechnung erstellen</a>{% endblock %}
+{% block content %}
+<section class="card">
+  <table>
+    <thead><tr><th>Nummer</th><th>Kunde</th><th>Datum</th><th>Zeitraum</th><th class="num">Brutto</th></tr></thead>
+    <tbody>
+    {% for i in object_list %}
+      <tr><td><a href="{{ i.get_absolute_url }}">{{ i.number }}</a></td><td>{{ i.customer.name }}</td><td>{{ i.issue_date|date:"d.m.Y" }}</td>
+        <td>{{ i.period_start|date:"d.m." }} – {{ i.period_end|date:"d.m.Y" }}</td><td class="num">{{ i.gross_total|floatformat:"2g" }} €</td></tr>
+    {% empty %}<tr><td colspan="5" class="muted">Noch keine Rechnungen.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

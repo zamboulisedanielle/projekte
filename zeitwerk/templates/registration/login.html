@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Anmelden{% endblock %}
+{% block public %}
+<div class="login-wrap">
+  <form method="post" class="card login">
+    <div class="brand big"><span class="logo">⏱</span> ZeitWerk</div>
+    <p class="muted">Zeiterfassung &amp; Abrechnung für kleine Agenturen</p>
+    {% csrf_token %}
+    {% if form.errors %}<div class="alert alert-error">Benutzername oder Passwort ist falsch.</div>{% endif %}
+    <label>Benutzername {{ form.username }}</label>
+    <label>Passwort {{ form.password }}</label>
+    <input type="hidden" name="next" value="{{ next }}">
+    <button class="btn full">Anmelden</button>
+    <p class="hint">Demo: <code>demo</code> / <code>demo1234</code></p>
+  </form>
+</div>
+{% endblock %}

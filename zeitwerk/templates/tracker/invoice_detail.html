@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block title %}Rechnung {{ object.number }}{% endblock %}
+{% block heading %}Rechnung {{ object.number }}{% endblock %}
+{% block actions %}<button class="btn ghost" onclick="window.print()">🖨 Drucken / PDF</button>{% endblock %}
+{% block content %}
+<article class="card invoice">
+  <div class="inv-head">
+    <div>
+      <strong>An:</strong><br>{{ object.customer.name }}<br>
+      {% if object.customer.contact_person %}z. Hd. {{ object.customer.contact_person }}<br>{% endif %}
+      {{ object.customer.city }}
+    </div>
+    <div class="right">
+      <div><span>Rechnungsnr.</span> {{ object.number }}</div>
+      <div><span>Datum</span> {{ object.issue_date|date:"d.m.Y" }}</div>
+      <div><span>Leistungszeitraum</span> {{ object.period_start|date:"d.m.Y" }} – {{ object.period_end|date:"d.m.Y" }}</div>
+    </div>
+  </div>
+  <table>
+    <thead><tr><th>Projekt</th><th class="num">Stunden</th><th class="num">Satz</th><th class="num">Betrag</th></tr></thead>
+    <tbody>
+    {% for item in object.line_items %}
+      <tr><td>{{ item.project }}</td><td class="num">{{ item.hours|floatformat:2 }}</td><td class="num">{{ item.rate|floatformat:"2g" }} €</td><td class="num">{{ item.amount|floatformat:"2g" }} €</td></tr>
+    {% endfor %}
+    </tbody>
+    <tfoot>
+      <tr><td colspan="3">Nettobetrag</td><td class="num">{{ object.net_total|floatformat:"2g" }} €</td></tr>
+      <tr><td colspan="3">zzgl. {{ object.vat_rate }} % USt.</td><td class="num">{{ object.vat_amount|floatformat:"2g" }} €</td></tr>
+      <tr class="total"><td colspan="3">Gesamtbetrag</td><td class="num">{{ object.gross_total|floatformat:"2g" }} €</td></tr>
+    </tfoot>
+  </table>
+  <details>
+    <summary>Einzelnachweis ({{ object.entries.count }} Einträge)</summary>
+    <table class="compact">
+      {% for e in object.entries.all %}<tr><td>{{ e.date|date:"d.m.Y" }}</td><td>{{ e.project.name }}</td><td>{{ e.description }}</td><td class="num">{{ e.hours|floatformat:2 }} h</td></tr>{% endfor %}
+    </table>
+  </details>
+</article>
+{% endblock %}

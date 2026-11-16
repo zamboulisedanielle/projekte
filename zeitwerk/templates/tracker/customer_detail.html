@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ object.name }}{% endblock %}
+{% block heading %}{{ object.name }}{% endblock %}
+{% block actions %}
+  <a class="btn ghost" href="{% url 'customer_update' object.pk %}">Bearbeiten</a>
+  <a class="btn ghost" href="{% url 'project_create' %}?customer={{ object.pk }}">+ Projekt</a>
+  <a class="btn" href="{% url 'invoice_create' %}?customer={{ object.pk }}">Rechnung erstellen</a>
+{% endblock %}
+{% block content %}
+<section class="card meta">
+  <div><span>Ansprechpartner</span>{{ object.contact_person|default:"–" }}</div>
+  <div><span>E-Mail</span>{{ object.email|default:"–" }}</div>
+  <div><span>Ort</span>{{ object.city|default:"–" }}</div>
+</section>
+<div class="grid-2">
+  <section class="card">
+    <h2>Projekte</h2>
+    <ul class="list">{% for p in object.projects.all %}<li><a href="{{ p.get_absolute_url }}">{{ p.name }}</a><b>{{ p.total_hours|floatformat:2 }} h</b></li>{% empty %}<li class="muted">Keine Projekte.</li>{% endfor %}</ul>
+  </section>
+  <section class="card">
+    <h2>Rechnungen</h2>
+    <ul class="list">{% for i in object.invoices.all %}<li><a href="{{ i.get_absolute_url }}">{{ i.number }}</a><b>{{ i.gross_total|floatformat:"2g" }} €</b></li>{% empty %}<li class="muted">Noch keine Rechnungen.</li>{% endfor %}</ul>
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,112 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  CUSTOMER
+  MERCHANT
+  ADMIN
+}
+
+enum OrderStatus {
+  OPEN
+  PROCESSED
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  email        String     @unique
+  passwordHash String
+  name         String
+  role         Role       @default(CUSTOMER)
+  createdAt    DateTime   @default(now())
+  shops        Shop[]
+  orders       Order[]
+  cartItems    CartItem[]
+}
+
+model Shop {
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String   @default("")
+  city        String   @default("")
+  ownerId     Int
+  owner       User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  offers      Offer[]
+  orders      Order[]
+  createdAt   DateTime @default(now())
+}
+
+model Book {
+  id            Int         @id @default(autoincrement())
+  title         String
+  author        String
+  isbn          String      @unique
+  description   String      @default("")
+  publishedYear Int?
+  offers        Offer[]
+  orderItems    OrderItem[]
+}
+
+/// A book offered by a shop with its own price and stock.
+model Offer {
+  id         Int        @id @default(autoincrement())
+  shopId     Int
+  shop       Shop       @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  bookId     Int
+  book       Book       @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  priceCents Int
+  stock      Int        @default(0)
+  cartItems  CartItem[]
+
+  @@unique([shopId, bookId])
+}
+
+model CartItem {
+  id       Int   @id @default(autoincrement())
+  userId   Int
+  user     User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  offerId  Int
+  offer    Offer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+  quantity Int   @default(1)
+
+  @@unique([userId, offerId])
+}
+
+/// One order per shop. A checkout with books from several shops creates several orders.
+model Order {
+  id              Int         @id @default(autoincrement())
+  orderNumber     String      @unique
+  customerId      Int
+  customer        User        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  shopId          Int
+  shop            Shop        @relation(fields: [shopId], references: [id], onDelete: Cascade)
+  status          OrderStatus @default(OPEN)
+  shippingName    String
+  shippingStreet  String
+  shippingZip     String
+  shippingCity    String
+  shippingCountry String      @default("Deutschland")
+  totalCents      Int
+  createdAt       DateTime    @default(now())
+  processedAt     DateTime?
+  items           OrderItem[]
+}
+
+/// Copies title and price at purchase time so later changes do not alter old orders.
+model OrderItem {
+  id             Int    @id @default(autoincrement())
+  orderId        Int
+  order          Order  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  bookId         Int
+  book           Book   @relation(fields: [bookId], references: [id])
+  bookTitle      String
+  bookAuthor     String
+  unitPriceCents Int
+  quantity       Int
+}

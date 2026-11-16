@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Projekte{% endblock %}
+{% block heading %}Projekte{% endblock %}
+{% block actions %}<a class="btn" href="{% url 'project_create' %}">+ Neues Projekt</a>{% endblock %}
+{% block content %}
+<div class="tabs">
+  <a href="?status=active" class="{% if status == 'active' %}active{% endif %}">Aktiv</a>
+  <a href="?status=done" class="{% if status == 'done' %}active{% endif %}">Abgeschlossen</a>
+  <a href="?status=all" class="{% if status == 'all' %}active{% endif %}">Alle</a>
+</div>
+<section class="card">
+  <table>
+    <thead><tr><th>Projekt</th><th>Kunde</th><th class="num">Satz</th><th class="num">Stunden</th><th class="num">Budget</th><th class="num">Abrechenbar</th></tr></thead>
+    <tbody>
+    {% for p in object_list %}
+      <tr>
+        <td><a href="{{ p.get_absolute_url }}">{{ p.name }}</a></td>
+        <td>{{ p.customer.name }}</td>
+        <td class="num">{{ p.hourly_rate|floatformat:"2g" }} €</td>
+        <td class="num">{{ p.total_hours|floatformat:2 }}</td>
+        <td class="num">{% if p.budget_hours %}<span class="badge {% if p.over_budget %}bad{% elif p.budget_used_percent > 80 %}warn{% else %}ok{% endif %}">{{ p.budget_used_percent }} %</span>{% else %}–{% endif %}</td>
+        <td class="num">{{ p.billable_amount|floatformat:"2g" }} €</td>
+      </tr>
+    {% empty %}<tr><td colspan="6" class="muted">Keine Projekte.</td></tr>{% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

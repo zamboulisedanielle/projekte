@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block heading %}Eintrag löschen{% endblock %}
+{% block actions %}{% endblock %}
+{% block content %}
+<form method="post" class="card form">
+  {% csrf_token %}
+  <p>Soll der Eintrag <strong>{{ object.hours }} h · {{ object.project.name }} · {{ object.date|date:"d.m.Y" }}</strong> wirklich gelöscht werden?</p>
+  <div class="form-actions">
+    <button class="btn danger">Löschen</button>
+    <a href="{% url 'entry_list' %}" class="btn ghost">Abbrechen</a>
+  </div>
+</form>
+{% endblock %}

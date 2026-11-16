@@ -1,0 +1,9 @@
+<p>{{ text }}</p>
+
+<button (click)="showInfo = !showInfo">
+  Afficher / cacher
+</button>
+
+<p [hidden]="!showInfo">
+  Voici une information supplémentaire ! 🎉
+</p>

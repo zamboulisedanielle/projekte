@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% block title %}Zeiten{% endblock %}
+{% block heading %}Zeiteinträge{% endblock %}
+{% block content %}
+<form method="get" class="card filters">
+  {{ form.project.label_tag }} {{ form.project }}
+  {{ form.month.label_tag }} {{ form.month }}
+  <label class="inline">{{ form.mine }} Nur meine</label>
+  <button class="btn small">Filtern</button>
+  <a class="btn small ghost" href="{% url 'entry_csv' %}?{{ query }}">⬇ CSV-Export</a>
+</form>
+
+<section class="card">
+  <table>
+    <thead><tr><th>Datum</th><th>Mitarbeiter</th><th>Projekt</th><th>Tätigkeit</th><th class="num">Stunden</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+    {% for e in entries %}
+      <tr>
+        <td>{{ e.date|date:"d.m.Y" }}</td>
+        <td>{{ e.user.username }}</td>
+        <td><a href="{{ e.project.get_absolute_url }}">{{ e.project.name }}</a><br><small class="muted">{{ e.project.customer.name }}</small></td>
+        <td>{{ e.description }}</td>
+        <td class="num">{{ e.hours|floatformat:2 }}</td>
+        <td>
+          {% if e.invoice %}<a class="badge ok" href="{{ e.invoice.get_absolute_url }}">{{ e.invoice.number }}</a>
+          {% elif e.billable %}<span class="badge warn">offen</span>
+          {% else %}<span class="badge">intern</span>{% endif %}
+        </td>
+        <td class="row-actions">
+          {% if not e.is_locked and e.user == user %}
+            <a href="{% url 'entry_update' e.pk %}">Bearbeiten</a>
+            <a href="{% url 'entry_delete' e.pk %}" class="danger-link">Löschen</a>
+          {% endif %}
+        </td>
+      </tr>
+    {% empty %}
+      <tr><td colspan="7" class="muted">Keine Einträge für diesen Filter.</td></tr>
+    {% endfor %}
+    </tbody>
+    <tfoot><tr><td colspan="4">Summe</td><td class="num"><strong>{{ total|floatformat:2 }}</strong></td><td colspan="2"></td></tr></tfoot>
+  </table>
+</section>
+{% endblock %}

@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% block title %}{{ object.name }}{% endblock %}
+{% block heading %}{{ object.name }} <small class="muted">· <a href="{{ object.customer.get_absolute_url }}">{{ object.customer.name }}</a></small>{% endblock %}
+{% block actions %}
+  <a class="btn ghost" href="{% url 'project_update' object.pk %}">Bearbeiten</a>
+  {% if object.status == 'active' %}<a class="btn" href="{% url 'entry_create' %}?project={{ object.pk }}">+ Zeit erfassen</a>{% endif %}
+{% endblock %}
+{% block content %}
+<section class="kpis">
+  <div class="kpi"><span>Stunden gesamt</span><strong>{{ object.total_hours|floatformat:2 }} h</strong></div>
+  <div class="kpi"><span>Stundensatz</span><strong>{{ object.hourly_rate|floatformat:"2g" }} €</strong></div>
+  <div class="kpi"><span>Abrechenbar (netto)</span><strong>{{ object.billable_amount|floatformat:"2g" }} €</strong></div>
+  <div class="kpi {% if object.over_budget %}alarm{% endif %}"><span>Budget</span>
+    <strong>{% if object.budget_hours %}{{ object.budget_used_percent }} % von {{ object.budget_hours|floatformat:"-2" }} h{% else %}–{% endif %}</strong></div>
+</section>
+{% if object.description %}<p class="card">{{ object.description }}</p>{% endif %}
+<div class="grid-2 wide-left">
+  <section class="card">
+    <h2>Zeiteinträge</h2>
+    <table>
+      <thead><tr><th>Datum</th><th>Wer</th><th>Tätigkeit</th><th class="num">h</th><th>Status</th></tr></thead>
+      <tbody>
+      {% for e in entries %}
+        <tr><td>{{ e.date|date:"d.m.Y" }}</td><td>{{ e.user.username }}</td><td>{{ e.description }}</td><td class="num">{{ e.hours|floatformat:2 }}</td>
+          <td>{% if e.invoice %}<span class="badge ok">{{ e.invoice.number }}</span>{% elif e.billable %}<span class="badge warn">offen</span>{% else %}<span class="badge">intern</span>{% endif %}</td></tr>
+      {% empty %}<tr><td colspan="5" class="muted">Noch keine Zeiten erfasst.</td></tr>{% endfor %}
+      </tbody>
+    </table>
+  </section>
+  <section class="card">
+    <h2>Stunden pro Person</h2>
+    <ul class="list">{% for r in by_user %}<li><span>{{ r.user__username }}</span><b>{{ r.hours|floatformat:2 }} h</b></li>{% empty %}<li class="muted">–</li>{% endfor %}</ul>
+  </section>
+</div>
+{% endblock %}

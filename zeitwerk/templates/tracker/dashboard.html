@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block title %}Übersicht{% endblock %}
+{% block heading %}Hallo {{ user.first_name|default:user.username }} 👋{% endblock %}
+{% block content %}
+<section class="kpis">
+  <div class="kpi"><span>Diese Woche</span><strong>{{ hours_week|floatformat:2 }} h</strong></div>
+  <div class="kpi"><span>Dieser Monat</span><strong>{{ hours_month|floatformat:2 }} h</strong></div>
+  <div class="kpi"><span>Noch nicht abgerechnet (netto)</span><strong>{{ unbilled|floatformat:"2g" }} €</strong></div>
+  <div class="kpi"><span>Rechnungen</span><strong>{{ invoice_count }}</strong></div>
+</section>
+
+<div class="grid-2">
+  <section class="card">
+    <h2>Meine Woche</h2>
+    <div class="week">
+      {% for d in week_days %}
+      <div class="day">
+        <div class="col"><div class="fill" style="height: {{ d.bar }}%"></div></div>
+        <span class="val">{{ d.hours|floatformat:"-2" }}</span>
+        <span class="lbl">{{ d.day|date:"D" }}</span>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="card">
+    <h2>Zuletzt erfasst</h2>
+    <ul class="list">
+      {% for e in recent %}
+      <li><span><strong>{{ e.project.name }}</strong><small>{{ e.date|date:"d.m." }} · {{ e.description }}</small></span><b>{{ e.hours|floatformat:2 }} h</b></li>
+      {% empty %}<li class="muted">Noch keine Einträge.</li>{% endfor %}
+    </ul>
+  </section>
+</div>
+
+<section class="card">
+  <h2>Aktive Projekte</h2>
+  <table>
+    <thead><tr><th>Projekt</th><th>Kunde</th><th class="w40">Stunden</th><th class="num">Budget</th></tr></thead>
+    <tbody>
+    {% for r in project_rows %}
+      <tr>
+        <td><a href="{{ r.project.get_absolute_url }}">{{ r.project.name }}</a></td>
+        <td>{{ r.project.customer.name }}</td>
+        <td><div class="hbar"><div style="width: {{ r.bar }}%"></div></div><small>{{ r.hours|floatformat:2 }} h</small></td>
+        <td class="num">{% if r.budget_pct is not None %}<span class="badge {% if r.budget_pct > 100 %}bad{% elif r.budget_pct > 80 %}warn{% else %}ok{% endif %}">{{ r.budget_pct }} %</span>{% else %}–{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
